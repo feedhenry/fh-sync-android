@@ -16,8 +16,11 @@
 package com.feedhenry.sdk.android;
 
 import android.content.ComponentName;
+import android.content.Context;
 import android.content.ServiceConnection;
 import android.os.IBinder;
+import android.support.annotation.NonNull;
+import com.feedhenry.sdk.sync.FHSyncListener;
 import com.feedhenry.sdk.sync.FHSyncUtils;
 
 /**
@@ -26,6 +29,11 @@ import com.feedhenry.sdk.sync.FHSyncUtils;
 public abstract class FHSyncServiceConnection implements ServiceConnection {
 
     private FHSyncService service;
+    private Context context;
+
+    public FHSyncServiceConnection(Context context) {
+        this.context = context;
+    }
 
     /**
      * Called when client is bound to service.
@@ -42,10 +50,11 @@ public abstract class FHSyncServiceConnection implements ServiceConnection {
 
     /**
      * Is it connected to the service?
+     *
      * @return true=service is connected, false=service is not connected or failed
      */
     public final boolean isConnected() {
-        return this.service!=null;
+        return this.service != null;
     }
 
     /**
@@ -64,6 +73,18 @@ public abstract class FHSyncServiceConnection implements ServiceConnection {
         }
     }
 
+    /**
+     * Unbinds service and unregisters listener.
+     *
+     * @param listener registered listener
+     */
+    public void unbindAndUnregister(@NonNull FHSyncListener listener) {
+        if (service != null && context != null) {
+            service.unregisterListener(listener);
+            context.unbindService(this);
+        }
+    }
+
     @Override
     public final void onServiceConnected(ComponentName componentName, IBinder iBinder) {
         onServiceConnected(((FHSyncService.FHSyncBinder) iBinder).getService());
@@ -71,11 +92,13 @@ public abstract class FHSyncServiceConnection implements ServiceConnection {
 
     @Override
     public final void onServiceDisconnected(ComponentName componentName) {
+        context = null;
         onServiceDisconnected();
     }
 
     @Override
     public final void onBindingDied(ComponentName name) {
+        context = null;
         this.service = null;
     }
 }

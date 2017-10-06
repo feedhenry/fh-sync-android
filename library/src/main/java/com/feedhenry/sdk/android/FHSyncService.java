@@ -15,12 +15,14 @@
  */
 package com.feedhenry.sdk.android;
 
+import android.app.Activity;
 import android.app.IntentService;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.Binder;
 import android.os.IBinder;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import com.feedhenry.sdk.exceptions.DataSetNotFound;
 import com.feedhenry.sdk.exceptions.FHNotReadyException;
@@ -163,7 +165,7 @@ public class FHSyncService extends IntentService {
         JSONObject queryParams;
         JSONObject metadata;
 
-        public ManagedDatasetConfig(FHSyncConfig syncConfig, JSONObject queryParams, JSONObject metadata) {
+        ManagedDatasetConfig(FHSyncConfig syncConfig, JSONObject queryParams, JSONObject metadata) {
             this.syncConfig = syncConfig;
             this.queryParams = queryParams;
             this.metadata = metadata;
@@ -179,7 +181,7 @@ public class FHSyncService extends IntentService {
      * @return connection to service, don't forget to call {@link Context#unbindService(ServiceConnection)} in your {@link android.app.Activity#onDestroy()}
      */
     public static FHSyncServiceConnection bindService(Context ctx, FHSyncUtils.Action1<FHSyncService> onConnected) {
-        FHSyncServiceConnection syncServiceConnection = new FHSyncServiceConnection() {
+        FHSyncServiceConnection syncServiceConnection = new FHSyncServiceConnection(ctx) {
             @Override
             public void onServiceConnected(FHSyncService service) {
                 super.onServiceConnected(service);
@@ -306,6 +308,12 @@ public class FHSyncService extends IntentService {
     }
 
     @Override
+    public boolean onUnbind(Intent intent) {
+        log.d(SERVICE_NAME, "Service " + toString() + " unbound.");
+        return super.onUnbind(intent);
+    }
+
+    @Override
     protected void onHandleIntent(@Nullable Intent intent) {
 
     }
@@ -315,7 +323,7 @@ public class FHSyncService extends IntentService {
      *
      * @param config config
      */
-    public void setConfig(FHSyncConfig config) {
+    public void setConfig(@NonNull FHSyncConfig config) {
         syncConfig = config;
         log.d(SERVICE_NAME, "Sync config set");
         try {
@@ -330,7 +338,7 @@ public class FHSyncService extends IntentService {
      *
      * @param url sync server URL
      */
-    public void setCloudUrl(String url) {
+    public void setCloudUrl(@NonNull String url) {
         cloudURL = url;
         networkClient.setCloudURL(url);
     }
@@ -481,22 +489,45 @@ public class FHSyncService extends IntentService {
         super.onDestroy();
         networkClient.unregisterNetworkListener();
         syncClient.destroy();
+        removeAllListners();
         log.d(SERVICE_NAME, "Service " + toString() + " destroyed.");
     }
 
-    public void registerListener(FHSyncListener listener) {
+    /**
+     * Registers sync listener with the service, it's recommended to use {@link FHSyncListener.Builder} to create the listener.
+     * Don't forget to unregister the listener by {@link #unregisterListener(FHSyncListener)} or {@link FHSyncServiceConnection#unbindAndUnregister(FHSyncListener)} when your activity or other
+     * component is destroyed (usually in {@link Activity#onDestroy()}).
+     *
+     * @param listener
+     */
+    public void registerListener(@NonNull FHSyncListener listener) {
         log.d(SERVICE_NAME, "listener " + listener.toString() + " registration");
         syncListeners.add(new WeakSyncListener(listener));
     }
 
-    public void unregisterListener(FHSyncListener listener) {
+    /**
+     * Unregisters sync listener from the service. Use this method or {@link FHSyncServiceConnection#unbindAndUnregister(FHSyncListener)} when your activity or other
+     * component is destroyed (usually in {@link Activity#onDestroy()}).
+     *
+     * @param listener
+     */
+    public void unregisterListener(@NonNull FHSyncListener listener) {
         for (Iterator<WeakSyncListener> i = syncListeners.iterator(); i.hasNext(); ) {
             WeakSyncListener syncListener = i.next();
-            if (syncListener.hasLeaked() || syncListener.getWrapped() == listener) { //removes leaked listeners or listener matching one you want to unregister
+            if (syncListener.getWrapped() == listener) {
                 i.remove();
                 log.d(SERVICE_NAME, "listener " + listener.toString() + " unregistration");
             }
         }
     }
 
+    private void removeAllListners() {
+        for (Iterator<WeakSyncListener> i = syncListeners.iterator(); i.hasNext(); ) {
+            WeakSyncListener syncListener = i.next();
+            if (syncListener.hasLeaked()) {
+                log.w(SERVICE_NAME,"Forgetting to call unregisterListener() or unbindAndUnregister() after your Android component is destroyed");
+            }
+            i.remove();
+        }
+    }
 }

@@ -1,6 +1,5 @@
 package com.feedhenry.sdk.android;
 
-import android.util.Log;
 import com.feedhenry.sdk.sync.FHSyncListener;
 import com.feedhenry.sdk.sync.NotificationMessage;
 
@@ -77,11 +76,4 @@ class WeakSyncListener implements FHSyncListener {
         notNullDo(ref.get(), l -> onClientStorageFailed(message));
     }
 
-    @Override
-    protected void finalize() throws Throwable {
-        if (hasLeaked()) {
-            Log.w("WeakSyncListener", "leaked");
-        }
-        super.finalize();
-    }
 }
