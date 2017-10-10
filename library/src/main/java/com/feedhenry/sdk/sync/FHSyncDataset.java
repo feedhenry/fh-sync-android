@@ -15,12 +15,12 @@
  */
 package com.feedhenry.sdk.sync;
 
-import android.os.Message;
 import com.feedhenry.sdk.network.NetworkClient;
 import com.feedhenry.sdk.network.SyncNetworkCallback;
 import com.feedhenry.sdk.network.SyncNetworkResponse;
 import com.feedhenry.sdk.storage.Storage;
 import com.feedhenry.sdk.utils.Logger;
+import com.feedhenry.sdk.utils.Scheduler;
 import com.feedhenry.sdk.utils.UtilFactory;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -59,7 +59,7 @@ class FHSyncDataset {
     private Logger log;
 
     //    private Context mContext;
-    private FHSyncNotificationHandler notificationHandler;
+    private Scheduler scheduler;
 
     private static final String KEY_DATE_SET_ID = "dataSetId";
     private static final String KEY_SYNC_LOOP_START = "syncLoopStart";
@@ -74,11 +74,11 @@ class FHSyncDataset {
 
     private static final String LOG_TAG = "FHSyncDataset";
 
-    FHSyncDataset(FHSyncNotificationHandler handler, String datasetId, FHSyncConfig config, JSONObject queryParams, JSONObject metaData, UtilFactory utilFactory) {
+    FHSyncDataset(String datasetId, FHSyncConfig config, JSONObject queryParams, JSONObject metaData, UtilFactory utilFactory) {
         storage = utilFactory.getStorage();
         networkClient = utilFactory.getNetworkClient();
         log = utilFactory.getLogger();
-        notificationHandler = handler;
+        scheduler = utilFactory.getScheduler();
         this.datasetId = datasetId;
         syncConfig = config;
         this.queryParams = queryParams;
@@ -199,7 +199,7 @@ class FHSyncDataset {
         syncPending = false;
         syncRunning = true;
         syncStart = new Date();
-        doNotify(null, NotificationMessage.SYNC_STARTED_CODE, null);
+        doNotify(null, NotificationMessage.SYNC_STARTED_MESSAGE, null);
         if (!networkClient.isOnline()) {
             syncCompleteWithCode("offline");
         } else {
@@ -254,13 +254,13 @@ class FHSyncDataset {
                             */
                             markInFlightAsCrashed();
                             log.e(LOG_TAG, "syncLoop failed : msg = " + response.getErrorMessage(), response.getError());
-                            doNotify(null, NotificationMessage.SYNC_FAILED_CODE, response.getRawResponse());
+                            doNotify(null, NotificationMessage.SYNC_FAILED_MESSAGE, response.getRawResponse());
                             syncCompleteWithCode(response.getRawResponse());
                         }
                     });
                 } catch (Exception e) {
                     log.e(LOG_TAG, "Error performing sync", e);
-                    doNotify(null, NotificationMessage.SYNC_FAILED_CODE, e.getMessage());
+                    doNotify(null, NotificationMessage.SYNC_FAILED_MESSAGE, e.getMessage());
                     syncCompleteWithCode(e.getMessage());
                 }
             } catch (JSONException e) {
@@ -279,9 +279,9 @@ class FHSyncDataset {
             JSONObject updates = data.getJSONObject("updates");
             JSONObject applied = updates.optJSONObject("applied");
             checkUidChanges(applied);
-            processUpdates(applied, NotificationMessage.REMOTE_UPDATE_APPLIED_CODE, ack);
-            processUpdates(updates.optJSONObject("failed"), NotificationMessage.REMOTE_UPDATE_FAILED_CODE, ack);
-            processUpdates(updates.optJSONObject("collisions"), NotificationMessage.COLLISION_DETECTED_CODE, ack);
+            processUpdates(applied, NotificationMessage.REMOTE_UPDATE_APPLIED_MESSAGE, ack);
+            processUpdates(updates.optJSONObject("failed"), NotificationMessage.REMOTE_UPDATE_FAILED_MESSAGE, ack);
+            processUpdates(updates.optJSONObject("collisions"), NotificationMessage.COLLISION_DETECTED_MESSAGE, ack);
             acknowledgements = ack;
         }
 
@@ -330,13 +330,13 @@ class FHSyncDataset {
                     @Override
                     public void fail(SyncNetworkResponse response) {
                         log.e(LOG_TAG, "syncRecords failed: " + response.getRawResponse(), response.getError());
-                        doNotify(null, NotificationMessage.SYNC_FAILED_CODE, response.getRawResponse());
+                        doNotify(null, NotificationMessage.SYNC_FAILED_MESSAGE, response.getRawResponse());
                         syncCompleteWithCode(response.getRawResponse());
                     }
                 });
             } catch (Exception e) {
                 log.e(LOG_TAG, "error when running syncRecords", e);
-                doNotify(null, NotificationMessage.SYNC_FAILED_CODE, e.getMessage());
+                doNotify(null, NotificationMessage.SYNC_FAILED_MESSAGE, e.getMessage());
                 syncCompleteWithCode(e.getMessage());
             }
         } catch (JSONException e) {
@@ -363,7 +363,7 @@ class FHSyncDataset {
             for (Iterator<String> it = deleted.keys(); it.hasNext(); ) {
                 String key = it.next();
                 dataRecords.remove(key);
-                doNotify(key, NotificationMessage.DELTA_RECEIVED_CODE, "delete");
+                doNotify(key, NotificationMessage.DELTA_RECEIVED_MESSAGE, "delete");
             }
         }
     }
@@ -379,7 +379,7 @@ class FHSyncDataset {
                     rec.setData(obj.getJSONObject("data"));
                     rec.setHashValue(obj.getString("hash"));
                     dataRecords.put(key, rec);
-                    doNotify(key, NotificationMessage.DELTA_RECEIVED_CODE, "update");
+                    doNotify(key, NotificationMessage.DELTA_RECEIVED_MESSAGE, "update");
                 }
 
             }
@@ -396,13 +396,13 @@ class FHSyncDataset {
                 FHSyncDataRecord record = new FHSyncDataRecord(obj.getJSONObject("data"));
                 record.setHashValue(obj.getString("hash"));
                 dataRecords.put(key, record);
-                doNotify(key, NotificationMessage.DELTA_RECEIVED_CODE, "create");
+                doNotify(key, NotificationMessage.DELTA_RECEIVED_MESSAGE, "create");
 
             }
         }
     }
 
-    private void processUpdates(JSONObject updates, int pnotification, JSONArray ack) throws JSONException {
+    private void processUpdates(JSONObject updates, String notificationCode, JSONArray ack) throws JSONException {
         if (updates != null) {
             for (Iterator<String> it = updates.keys(); it.hasNext(); ) {
                 String key = it.next();
@@ -411,7 +411,7 @@ class FHSyncDataset {
                 FHSyncPendingRecord pendingRec = pendingRecords.get(key);
                 if (pendingRec != null && pendingRec.isInFlight() && !pendingRec.isCrashed()) {
                     pendingRecords.remove(key);
-                    doNotify(up.getString("uid"), pnotification, up.toString());
+                    doNotify(up.getString("uid"), notificationCode, up.toString());
                 }
             }
         }
@@ -449,11 +449,11 @@ class FHSyncDataset {
 
                         keysToRemove.add(pendingHash);
                         if ("applied".equals(crashedUpdate.opt("type"))) {
-                            doNotify(crashedUpdate.getString("uid"), NotificationMessage.REMOTE_UPDATE_APPLIED_CODE, crashedUpdate.toString());
+                            doNotify(crashedUpdate.getString("uid"), NotificationMessage.REMOTE_UPDATE_APPLIED_MESSAGE, crashedUpdate.toString());
                         } else if ("failed".equals(crashedUpdate.opt("type"))) {
-                            doNotify(crashedUpdate.getString("uid"), NotificationMessage.REMOTE_UPDATE_FAILED_CODE, crashedUpdate.toString());
+                            doNotify(crashedUpdate.getString("uid"), NotificationMessage.REMOTE_UPDATE_FAILED_MESSAGE, crashedUpdate.toString());
                         } else if ("collisions".equals(crashedUpdate.opt("type"))) {
-                            doNotify(crashedUpdate.getString("uid"), NotificationMessage.COLLISION_DETECTED_CODE, crashedUpdate.toString());
+                            doNotify(crashedUpdate.getString("uid"), NotificationMessage.COLLISION_DETECTED_MESSAGE, crashedUpdate.toString());
                         }
 
                     } else {
@@ -535,12 +535,12 @@ class FHSyncDataset {
         } catch (JSONException e) {
             log.e(LOG_TAG, "syncComplete: JSON serialization exception", e);
         }
-        doNotify(hashvalue, NotificationMessage.SYNC_COMPLETE_CODE, code);
+        doNotify(hashvalue, NotificationMessage.SYNC_COMPLETE_MESSAGE, code);
     }
 
     private FHSyncPendingRecord addPendingObject(String uid, JSONObject data, String action) throws JSONException {
         if (!networkClient.isOnline()) {
-            doNotify(uid, NotificationMessage.OFFLINE_UPDATE_CODE, action);
+            doNotify(uid, NotificationMessage.OFFLINE_UPDATE_MESSAGE, action);
         }
         FHSyncPendingRecord pending = new FHSyncPendingRecord();
         pending.setInFlight(false);
@@ -572,7 +572,7 @@ class FHSyncDataset {
             syncPending = true;
         }
         writeToStorage();
-        doNotify(pendingObj.getUid(), NotificationMessage.LOCAL_UPDATE_APPLIED_CODE, pendingObj.getAction());
+        doNotify(pendingObj.getUid(), NotificationMessage.LOCAL_UPDATE_APPLIED_MESSAGE, pendingObj.getAction());
     }
 
     private void updateDatasetFromLocal(FHSyncPendingRecord pendingObj) throws JSONException {
@@ -717,7 +717,7 @@ class FHSyncDataset {
             String content = new String(storage.getContent(datasetId), UTF_8);
             JSONObject json = new JSONObject(content);
             fromJSON(json);
-            doNotify(null, NotificationMessage.LOCAL_UPDATE_APPLIED_CODE, "load");
+            doNotify(null, NotificationMessage.LOCAL_UPDATE_APPLIED_MESSAGE, "load");
         } catch (FileNotFoundException e) {
             log.w(LOG_TAG, "File not found for reading, datasetId: " + datasetId);
         } catch (IOException e) {
@@ -733,62 +733,62 @@ class FHSyncDataset {
             storage.putContent(datasetId, content.getBytes(UTF_8));
         } catch (FileNotFoundException ex) {
             log.e(LOG_TAG, "File not found for writing, datasetId: " + datasetId, ex);
-            doNotify(null, NotificationMessage.CLIENT_STORAGE_FAILED_CODE, ex.getMessage());
+            doNotify(null, NotificationMessage.CLIENT_STORAGE_FAILED_MESSAGE, ex.getMessage());
         } catch (IOException e) {
             log.e(LOG_TAG, "Error writing to storage, datasetId: " + datasetId, e);
-            doNotify(null, NotificationMessage.CLIENT_STORAGE_FAILED_CODE, e.getMessage());
+            doNotify(null, NotificationMessage.CLIENT_STORAGE_FAILED_MESSAGE, e.getMessage());
         }
     }
 
-    private void doNotify(String uid, int code, String message) {
+    private void doNotify(String uid, String notificationCode, String message) {
         boolean sendMessage = false;
-        switch (code) {
-            case NotificationMessage.SYNC_STARTED_CODE:
+        switch (notificationCode) {
+            case NotificationMessage.SYNC_STARTED_MESSAGE:
                 if (syncConfig.isNotifySyncStarted()) {
                     sendMessage = true;
                 }
                 break;
-            case NotificationMessage.SYNC_COMPLETE_CODE:
+            case NotificationMessage.SYNC_COMPLETE_MESSAGE:
                 if (syncConfig.isNotifySyncComplete()) {
                     sendMessage = true;
                 }
                 break;
-            case NotificationMessage.OFFLINE_UPDATE_CODE:
+            case NotificationMessage.OFFLINE_UPDATE_MESSAGE:
                 if (syncConfig.isNotifyOfflineUpdate()) {
                     sendMessage = true;
                 }
                 break;
-            case NotificationMessage.COLLISION_DETECTED_CODE:
+            case NotificationMessage.COLLISION_DETECTED_MESSAGE:
                 if (syncConfig.isNotifySyncCollisions()) {
                     sendMessage = true;
                 }
                 break;
-            case NotificationMessage.REMOTE_UPDATE_FAILED_CODE:
+            case NotificationMessage.REMOTE_UPDATE_FAILED_MESSAGE:
                 if (syncConfig.isNotifyUpdateFailed()) {
                     sendMessage = true;
                 }
                 break;
-            case NotificationMessage.REMOTE_UPDATE_APPLIED_CODE:
+            case NotificationMessage.REMOTE_UPDATE_APPLIED_MESSAGE:
                 if (syncConfig.isNotifyRemoteUpdateApplied()) {
                     sendMessage = true;
                 }
                 break;
-            case NotificationMessage.LOCAL_UPDATE_APPLIED_CODE:
+            case NotificationMessage.LOCAL_UPDATE_APPLIED_MESSAGE:
                 if (syncConfig.isNotifyLocalUpdateApplied()) {
                     sendMessage = true;
                 }
                 break;
-            case NotificationMessage.DELTA_RECEIVED_CODE:
+            case NotificationMessage.DELTA_RECEIVED_MESSAGE:
                 if (syncConfig.isNotifyDeltaReceived()) {
                     sendMessage = true;
                 }
                 break;
-            case NotificationMessage.SYNC_FAILED_CODE:
+            case NotificationMessage.SYNC_FAILED_MESSAGE:
                 if (syncConfig.isNotifySyncFailed()) {
                     sendMessage = true;
                 }
                 break;
-            case NotificationMessage.CLIENT_STORAGE_FAILED_CODE:
+            case NotificationMessage.CLIENT_STORAGE_FAILED_MESSAGE:
                 if (syncConfig.isNotifyClientStorageFailed()) {
                     sendMessage = true;
                 }
@@ -796,9 +796,8 @@ class FHSyncDataset {
                 break;
         }
         if (sendMessage) {
-            NotificationMessage notification = NotificationMessage.getMessage(datasetId, uid, code, message);
-            Message msg = notificationHandler.obtainMessage(code, notification);
-            notificationHandler.sendMessage(msg);
+            NotificationMessage notification = new NotificationMessage(datasetId, uid, notificationCode, message);
+            scheduler.sendNotificationMessage(notification);
         }
     }
 
@@ -990,10 +989,6 @@ class FHSyncDataset {
 
     public Date getSyncEnd() {
         return syncEnd;
-    }
-
-    public void setNotificationHandler(FHSyncNotificationHandler handler) {
-        notificationHandler = handler;
     }
 
     public String getDatasetId() {

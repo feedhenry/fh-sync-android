@@ -15,11 +15,7 @@
  */
 package com.feedhenry.sdk.sync;
 
-import android.os.Handler;
-import android.os.Looper;
-import android.os.Message;
-
-public class FHSyncNotificationHandler extends Handler {
+public class FHSyncNotificationHandler {
 
     private FHSyncListener syncListener;
 
@@ -27,49 +23,42 @@ public class FHSyncNotificationHandler extends Handler {
         super();
         syncListener = listener;
     }
-
-    public FHSyncNotificationHandler(Looper looper, FHSyncListener listener) {
-        super(looper);
-        syncListener = listener;
-    }
-
     public void setSyncListener(FHSyncListener listener) {
         syncListener = listener;
     }
 
-    public void handleMessage(Message msg) {
-        NotificationMessage notification = (NotificationMessage) msg.obj;
+    public void handleMessage(NotificationMessage msg) {
         if (syncListener != null) {
-            switch (msg.what) {
-                case NotificationMessage.SYNC_STARTED_CODE:
-                    syncListener.onSyncStarted(notification);
+            switch (msg.getCodeMessage()) {
+                case NotificationMessage.SYNC_STARTED_MESSAGE:
+                    syncListener.onSyncStarted(msg);
                     break;
-                case NotificationMessage.SYNC_COMPLETE_CODE:
-                    syncListener.onSyncCompleted(notification);
+                case NotificationMessage.SYNC_COMPLETE_MESSAGE:
+                    syncListener.onSyncCompleted(msg);
                     break;
-                case NotificationMessage.OFFLINE_UPDATE_CODE:
-                    syncListener.onUpdateOffline(notification);
+                case NotificationMessage.OFFLINE_UPDATE_MESSAGE:
+                    syncListener.onUpdateOffline(msg);
                     break;
-                case NotificationMessage.COLLISION_DETECTED_CODE:
-                    syncListener.onCollisionDetected(notification);
+                case NotificationMessage.COLLISION_DETECTED_MESSAGE:
+                    syncListener.onCollisionDetected(msg);
                     break;
-                case NotificationMessage.REMOTE_UPDATE_FAILED_CODE:
-                    syncListener.onRemoteUpdateFailed(notification);
+                case NotificationMessage.REMOTE_UPDATE_FAILED_MESSAGE:
+                    syncListener.onRemoteUpdateFailed(msg);
                     break;
-                case NotificationMessage.REMOTE_UPDATE_APPLIED_CODE:
-                    syncListener.onRemoteUpdateApplied(notification);
+                case NotificationMessage.REMOTE_UPDATE_APPLIED_MESSAGE:
+                    syncListener.onRemoteUpdateApplied(msg);
                     break;
-                case NotificationMessage.LOCAL_UPDATE_APPLIED_CODE:
-                    syncListener.onLocalUpdateApplied(notification);
+                case NotificationMessage.LOCAL_UPDATE_APPLIED_MESSAGE:
+                    syncListener.onLocalUpdateApplied(msg);
                     break;
-                case NotificationMessage.DELTA_RECEIVED_CODE:
-                    syncListener.onDeltaReceived(notification);
+                case NotificationMessage.DELTA_RECEIVED_MESSAGE:
+                    syncListener.onDeltaReceived(msg);
                     break;
-                case NotificationMessage.SYNC_FAILED_CODE:
-                    syncListener.onSyncFailed(notification);
+                case NotificationMessage.SYNC_FAILED_MESSAGE:
+                    syncListener.onSyncFailed(msg);
                     break;
-                case NotificationMessage.CLIENT_STORAGE_FAILED_CODE:
-                    syncListener.onClientStorageFailed(notification);
+                case NotificationMessage.CLIENT_STORAGE_FAILED_MESSAGE:
+                    syncListener.onClientStorageFailed(msg);
                 default:
                     break;
             }

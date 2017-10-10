@@ -15,24 +15,10 @@
  */
 package com.feedhenry.sdk.sync;
 
-import java.util.HashMap;
-import java.util.Map;
-
 /**
  * The message object sent to the listener when an event happened.
  */
 public class NotificationMessage {
-
-    public static final int SYNC_STARTED_CODE = 0;
-    public static final int SYNC_COMPLETE_CODE = 1;
-    public static final int OFFLINE_UPDATE_CODE = 2;
-    public static final int COLLISION_DETECTED_CODE = 3;
-    public static final int REMOTE_UPDATE_FAILED_CODE = 4;
-    public static final int REMOTE_UPDATE_APPLIED_CODE = 5;
-    public static final int DELTA_RECEIVED_CODE = 6;
-    public static final int CLIENT_STORAGE_FAILED_CODE = 7;
-    public static final int SYNC_FAILED_CODE = 8;
-    public static final int LOCAL_UPDATE_APPLIED_CODE = 9;
 
     public static final String SYNC_STARTED_MESSAGE = "SYNC_STARTED";
     public static final String SYNC_COMPLETE_MESSAGE = "SYNC_COMPLETE";
@@ -44,21 +30,6 @@ public class NotificationMessage {
     public static final String DELTA_RECEIVED_MESSAGE = "DELTA_RECEIVED";
     public static final String CLIENT_STORAGE_FAILED_MESSAGE = "CLIENT_STORAGE_FAILED";
     public static final String SYNC_FAILED_MESSAGE = "SYNC_FAILED";
-
-    private static Map<Integer, String> messageMap = new HashMap<>();
-
-    static {
-        messageMap.put(SYNC_STARTED_CODE, SYNC_STARTED_MESSAGE);
-        messageMap.put(SYNC_COMPLETE_CODE, SYNC_COMPLETE_MESSAGE);
-        messageMap.put(OFFLINE_UPDATE_CODE, OFFLINE_UPDATE_MESSAGE);
-        messageMap.put(COLLISION_DETECTED_CODE, COLLISION_DETECTED_MESSAGE);
-        messageMap.put(REMOTE_UPDATE_FAILED_CODE, REMOTE_UPDATE_FAILED_MESSAGE);
-        messageMap.put(REMOTE_UPDATE_APPLIED_CODE, REMOTE_UPDATE_APPLIED_MESSAGE);
-        messageMap.put(LOCAL_UPDATE_APPLIED_CODE, LOCAL_UPDATE_APPLIED_MESSAGE);
-        messageMap.put(DELTA_RECEIVED_CODE, DELTA_RECEIVED_MESSAGE);
-        messageMap.put(CLIENT_STORAGE_FAILED_CODE, CLIENT_STORAGE_FAILED_MESSAGE);
-        messageMap.put(SYNC_FAILED_CODE, SYNC_FAILED_MESSAGE);
-    }
 
     private String dataId;
     private String uid;
@@ -95,7 +66,7 @@ public class NotificationMessage {
      *
      * @return the code message associated with the event
      */
-    public String getCode() {
+    public String getCodeMessage() {
         return codeMessage;
     }
 
@@ -110,9 +81,5 @@ public class NotificationMessage {
 
     public String toString() {
         return "DataId:" + dataId + "-UID:" + uid + "-Code:" + codeMessage + "-Message:" + extraMessage;
-    }
-
-    public static NotificationMessage getMessage(String datasetId, String uid, int code, String message) {
-        return new NotificationMessage(datasetId, uid, messageMap.get(code), message);
     }
 }
