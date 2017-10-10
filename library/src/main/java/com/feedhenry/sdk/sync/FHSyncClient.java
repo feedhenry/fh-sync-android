@@ -15,15 +15,12 @@
  */
 package com.feedhenry.sdk.sync;
 
-import android.app.Activity;
-import android.os.Handler;
-import android.os.HandlerThread;
-import android.os.Looper;
 import com.feedhenry.sdk.exceptions.DataSetNotFound;
 import com.feedhenry.sdk.exceptions.FHNotReadyException;
 import com.feedhenry.sdk.network.NetworkClient;
 import com.feedhenry.sdk.network.SyncNetworkCallback;
 import com.feedhenry.sdk.utils.Logger;
+import com.feedhenry.sdk.utils.Scheduler;
 import com.feedhenry.sdk.utils.UtilFactory;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -31,6 +28,7 @@ import org.json.JSONObject;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Future;
 
 /**
  * The sync client is part of the FeedHenry data sync framework. It provides a
@@ -41,10 +39,9 @@ import java.util.Map;
  */
 public class FHSyncClient {
 
-
     private static final String LOG_TAG = "FHSyncClient";
+    private final Scheduler scheduler;
 
-    private Handler handler;
     private NetworkClient networkClient;
 
     private Map<String, FHSyncDataset> datasets = new HashMap<>();
@@ -54,11 +51,9 @@ public class FHSyncClient {
     private FHSyncNotificationHandler notificationHandler;
 
     private boolean initialized = false;
-    private MonitorTask monitorTask = null;
     private UtilFactory utilFactory;
     private Logger log;
-    private HandlerThread syncClientThread;
-    private HandlerThread monitorThread;
+    private Future<?> syncTask;
 
     /**
      * Creates and initializes the sync client and starts sync threads.
@@ -72,33 +67,20 @@ public class FHSyncClient {
         this.utilFactory = utilFactory;
         this.networkClient = utilFactory.getNetworkClient();
         this.log = utilFactory.getLogger();
+        this.scheduler = utilFactory.getScheduler();
 
         initHandlers();
         initialized = true;
 
-        syncClientThread = new HandlerThread("FHSyncClient");
-        syncClientThread.start();
-        handler = new Handler(syncClientThread.getLooper());
-        if (null == monitorTask) {
-            monitorThread = new HandlerThread("FHSyncClient_monitor");
-            monitorThread.start();
-            Handler handler = new Handler(monitorThread.getLooper());
-            monitorTask = new MonitorTask();
-            handler.post(monitorTask);
-        }
     }
 
     /**
      * Initializes the notification handlers.
      */
     private void initHandlers() {
-        if (null != Looper.myLooper()) {
-            notificationHandler = new FHSyncNotificationHandler(this.syncListener);
-        } else {
-            HandlerThread ht = new HandlerThread("FHSyncClientNotificationHanlder");
-            ht.start();
-            notificationHandler = new FHSyncNotificationHandler(ht.getLooper(), this.syncListener);
-        }
+        notificationHandler = new FHSyncNotificationHandler(this.syncListener);
+        scheduler.setNotificationHandler(notificationHandler);
+        syncTask = scheduler.scheduleWithRate(this::checkDatasets, 1000);
     }
 
     /**
@@ -118,7 +100,7 @@ public class FHSyncClient {
      *
      * @param dataId      The id of the dataset.
      * @param config      The sync configuration for the dataset. If not specified,
-     *                     the sync configuration passed in the initDev method will be used
+     *                    the sync configuration passed in the initDev method will be used
      * @param queryParams Query parameters for the dataset
      *
      * @throws IllegalStateException thrown if FHSyncClient isn't initialised.
@@ -132,7 +114,7 @@ public class FHSyncClient {
      *
      * @param dataId      The id of the dataset.
      * @param config      The sync configuration for the dataset. If not specified,
-     *                     the sync configuration passed in the initDev method will be used
+     *                    the sync configuration passed in the initDev method will be used
      * @param queryParams Query parameters for the dataset
      * @param metaData    Meta for the dataset
      *
@@ -147,10 +129,8 @@ public class FHSyncClient {
         if (null != config) {
             syncConfig = config;
         }
-        if (null != dataset) {
-            dataset.setNotificationHandler(notificationHandler);
-        } else {
-            dataset = new FHSyncDataset(notificationHandler, dataId, syncConfig, queryParams, metaData, utilFactory);
+        if (dataset == null) {
+            dataset = new FHSyncDataset(dataId, syncConfig, queryParams, metaData, utilFactory);
             datasets.put(dataId, dataset);
             dataset.setSyncRunning(false);
             dataset.setInitialised(true);
@@ -369,12 +349,7 @@ public class FHSyncClient {
      */
     public void destroy() {
         if (initialized) {
-            if (null != monitorTask) {
-                monitorTask.stopRunning();
-            }
-            if (syncClientThread != null) {
-                syncClientThread.quit();
-            }
+            syncTask.cancel(true);
             for (String key : datasets.keySet()) {
                 stop(key);
             }
@@ -385,52 +360,28 @@ public class FHSyncClient {
         }
     }
 
-    private class MonitorTask implements Runnable {
-
-        private boolean mKeepRunning = true;
-
-        public void stopRunning() {
-            mKeepRunning = false;
-            log.d(LOG_TAG, "interrupting MonitorTask");
-            monitorThread.quit();
-        }
-
-        private void checkDatasets() {
-            if (null != datasets) {
-                for (Map.Entry<String, FHSyncDataset> entry : datasets.entrySet()) {
-                    final FHSyncDataset dataset = entry.getValue();
-                    boolean syncRunning = dataset.isSyncRunning();
-                    if (!syncRunning && !dataset.isStopSync()) {
-                        // sync isn't running for dataId at the moment, check if needs to start it
-                        Date lastSyncStart = dataset.getSyncStart();
-                        Date lastSyncEnd = dataset.getSyncEnd();
-                        if (null == lastSyncStart) {
+    private void checkDatasets() {
+        if (null != datasets) {
+            for (Map.Entry<String, FHSyncDataset> entry : datasets.entrySet()) {
+                final FHSyncDataset dataset = entry.getValue();
+                boolean syncRunning = dataset.isSyncRunning();
+                if (!syncRunning && !dataset.isStopSync()) {
+                    // sync isn't running for dataId at the moment, check if needs to start it
+                    Date lastSyncStart = dataset.getSyncStart();
+                    Date lastSyncEnd = dataset.getSyncEnd();
+                    if (null == lastSyncStart) {
+                        dataset.setSyncPending(true);
+                    } else if (null != lastSyncEnd) {
+                        long interval = new Date().getTime() - lastSyncEnd.getTime();
+                        if (interval > dataset.getSyncConfig().getSyncFrequency() * 1000) {
+                            log.d(LOG_TAG, dataset.getDatasetId() + " Should start sync!!");
                             dataset.setSyncPending(true);
-                        } else if (null != lastSyncEnd) {
-                            long interval = new Date().getTime() - lastSyncEnd.getTime();
-                            if (interval > dataset.getSyncConfig().getSyncFrequency() * 1000) {
-                                log.d(LOG_TAG, dataset.getDatasetId() + " Should start sync!!");
-                                dataset.setSyncPending(true);
-                            }
-                        }
-
-                        if (dataset.isSyncPending()) {
-                            handler.post(dataset::startSyncLoop);
                         }
                     }
-                }
-            }
-        }
 
-        @Override
-        public void run() {
-            while (mKeepRunning && !Thread.currentThread().isInterrupted()) {
-                checkDatasets();
-                try {
-                    Thread.sleep(1000);
-                } catch (Exception e) {
-                    log.e(LOG_TAG, "MonitorTask thread is interrupted", e);
-                    Thread.currentThread().interrupt();
+                    if (dataset.isSyncPending()) {
+                        scheduler.schedule(dataset::startSyncLoop);
+                    }
                 }
             }
         }

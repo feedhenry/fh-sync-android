@@ -23,12 +23,34 @@ import com.feedhenry.sdk.storage.Storage;
  */
 public interface UtilFactory {
 
+    /**
+     * Provides logging functionality.
+     * @return logger
+     */
     Logger getLogger();
 
+    /**
+     * Provides client id generation functionality.
+     * @return client id generator
+     */
     ClientIdGenerator getClientIdGenerator();
 
+    /**
+     * Provides network client to execute network requests
+     * @return network client
+     */
     NetworkClient getNetworkClient();
 
+    /**
+     * Provides persistent storage of data.
+     * @return storage object
+     */
     Storage getStorage();
+
+    /**
+     * Provides capability of scheduling asynchronous task.
+     * @return scheuler
+     */
+    Scheduler getScheduler();
 
 }

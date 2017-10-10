@@ -21,6 +21,7 @@ import com.feedhenry.sdk.network.NetworkClient;
 import com.feedhenry.sdk.storage.Storage;
 import com.feedhenry.sdk.utils.ClientIdGenerator;
 import com.feedhenry.sdk.utils.Logger;
+import com.feedhenry.sdk.utils.Scheduler;
 import com.feedhenry.sdk.utils.UtilFactory;
 
 /**
@@ -33,6 +34,7 @@ public class AndroidUtilFactory implements UtilFactory {
     private ClientIdGenerator clientIdGenerator;
     private NetworkClientImpl networkClient;
     private Storage storage;
+    private Scheduler scheduler;
 
     public AndroidUtilFactory(Context ctx) {
         context = ctx;
@@ -66,4 +68,13 @@ public class AndroidUtilFactory implements UtilFactory {
         }
         return storage;
     }
+
+    @Override
+    public Scheduler getScheduler() {
+        if (scheduler == null) {
+            scheduler = new AndroidScheduler(context);
+        }
+        return scheduler;
+    }
+
 }
