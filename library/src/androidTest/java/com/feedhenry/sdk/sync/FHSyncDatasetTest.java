@@ -45,7 +45,7 @@ public class FHSyncDatasetTest {
     private MockWebServer mockWebServer;
     private AndroidUtilFactory utilFactory;
 
-    private class Listener implements FHSyncListener {
+    public class Listener implements FHSyncListener {
 
         @Override
         public void onSyncStarted(NotificationMessage message) {
@@ -126,7 +126,7 @@ public class FHSyncDatasetTest {
         FHSyncClient client = new FHSyncClient(config, utilFactory);;
 
         client.manage(DATASET_ID, null, new JSONObject());
-        Map<String, FHSyncDataset> datasets = (Map<String, FHSyncDataset>) FHTestUtils.getPrivateField(client, "mDataSets");
+        Map<String, FHSyncDataset> datasets = (Map<String, FHSyncDataset>) FHTestUtils.getPrivateField(client, "datasets");
         FHSyncDataset dataset = datasets.get(DATASET_ID);
         FHSyncDataset spy = Mockito.spy(dataset);
         Mockito.doNothing().when(spy).startSyncLoop();
