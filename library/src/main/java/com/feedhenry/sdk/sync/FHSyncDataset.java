@@ -33,7 +33,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-class FHSyncDataset {
+public class FHSyncDataset {
 
     private static final Charset UTF_8 = Charset.forName("UTF-8");
     private final Storage storage;
