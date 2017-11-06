@@ -1,12 +1,12 @@
-# FeedHenry Android SDK
+# FeedHenry Sync Android SDK
 
 [![circle-ci](https://img.shields.io/circleci/project/github/feedhenry/fh-android-sdk/master.svg)](https://circleci.com/gh/feedhenry/fh-android-sdk)
-[![Coveralls](https://img.shields.io/coveralls/feedhenry/fh-android-sdk/master.svg)](https://coveralls.io/github/feedhenry/fh-android-sdk)
+[![codecov](https://codecov.io/gh/feedhenry/fh-sync-android/branch/master/graph/badge.svg)](https://codecov.io/gh/feedhenry/fh-sync-android) 
+[![Known Vulnerabilities](https://snyk.io/test/github/snyk/goof/badge.svg)](https://snyk.io/test/github/snyk/goof)
 [![License](https://img.shields.io/badge/-Apache%202.0-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0)
-[![Maven Central](https://img.shields.io/maven-central/v/com.feedhenry/fh-android-sdk.svg)](http://search.maven.org/#search%7Cga%7C1%7Cfh-android-sdk)
-[![Javadocs](http://www.javadoc.io/badge/com.feedhenry/fh-android-sdk.svg?color=blue)](http://www.javadoc.io/doc/com.feedhenry/fh-android-sdk)
-
-This SDK should provide you with all you'll need to start developing cloud-connected apps with the FeedHenry platform. The SDK provides access to cloud action calls, app authentication and authorization.
+<!-- [![Maven Central](https://img.shields.io/maven-central/v/com.feedhenry/fh-android-sdk.svg)](http://search.maven.org/#search%7Cga%7C1%7Cfh-android-sdk)
+ [![Javadocs](http://www.javadoc.io/badge/com.feedhenry/fh-android-sdk.svg?color=blue)](http://www.javadoc.io/doc/com.feedhenry/fh-android-sdk)
+-->
 
 |                 | Project Info                                                 |
 | --------------- | ------------------------------------------------------------ |
@@ -24,15 +24,17 @@ This SDK should provide you with all you'll need to start developing cloud-conne
 
 ## Usage
 
-There are two supported ways of developing apps using Feedhenry for Android: Android Studio and Maven.
+There are two supported ways of developing apps using Feedhenry Sync SDK for Android: Android Studio and Maven.
 
+__Project has not been published to Maven Central yet.__
+<!--
 ### Android Studio
 
 Add to your application's `build.gradle` file
 
 ```groovy
 dependencies {
-  compile 'com.feedhenry:fh-android-sdk:3.3.3'
+  compile 'com.feedhenry:fh-sync-android:1.0.0'
 }
 ```
 
@@ -43,26 +45,19 @@ Include the following dependencies in your project's `pom.xml`
 ```xml
 <dependency>
   <groupId>com.feedhenry</groupId>
-  <artifactId>fh-android-sdk</artifactId>
-  <version>3.3.3</version>
+  <artifactId>fh-sync-android</artifactId>
+  <version>1.0.0</version>
   <type>aar</type>
 </dependency>
 ```
-
+-->
 ## Documentation
 
-For more details about that please consult our [JavaDoc](http://www.javadoc.io/doc/com.feedhenry/fh-android-sdk).
+TBD
 
 ## Demo apps
 
-Take a look in our demo apps
-
-* [Blank](https://github.com/feedhenry-templates/blank-android-gradle)
-* [Helloworld](https://github.com/feedhenry-templates/helloworld-android-gradle)
-* [Push Starter](https://github.com/feedhenry-templates/pushstarter-android-app)
-* [Sync](https://github.com/feedhenry-templates/sync-android-app)
-* [SAML](https://github.com/feedhenry-templates/saml-android-app)
-* [OAuth2](https://github.com/feedhenry-templates/oauth-android-app)
+TBD
 
 ## Development
 
