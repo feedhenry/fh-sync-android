@@ -1,12 +1,12 @@
 /**
  * Copyright Red Hat, Inc, and individual contributors.
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,7 +15,8 @@
  */
 package com.feedhenry.sdk.sync;
 
-import org.json.fh.JSONObject;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 public class FHSyncDataRecord {
 
@@ -35,13 +36,13 @@ public class FHSyncDataRecord {
 
     }
 
-    public FHSyncDataRecord(JSONObject pData) {
-        setData(pData);
+    public FHSyncDataRecord(JSONObject data) throws JSONException {
+        setData(data);
     }
 
-    public FHSyncDataRecord(String pUid, JSONObject pData) {
-        this.uid = pUid;
-        setData(pData);
+    public FHSyncDataRecord(String uid, JSONObject data) throws JSONException {
+        this.uid = uid;
+        setData(data);
     }
 
     public String getHashValue() {
@@ -56,20 +57,20 @@ public class FHSyncDataRecord {
         return uid;
     }
 
-    public void setData(JSONObject pData) {
-        data = new JSONObject(pData.toString());
-        hashValue = FHSyncUtils.generateObjectHash(data);
+    public void setData(JSONObject data) throws JSONException {
+        this.data = new JSONObject(data.toString());
+        hashValue = FHSyncUtils.generateObjectHash(this.data);
     }
 
-    public void setUid(String pUid) {
-        this.uid = pUid;
+    public void setUid(String uid) {
+        this.uid = uid;
     }
 
-    public void setHashValue(String pHashValue) {
-        this.hashValue = pHashValue;
+    public void setHashValue(String hashValue) {
+        this.hashValue = hashValue;
     }
 
-    public JSONObject getJSON() {
+    public JSONObject getJSON() throws JSONException {
         JSONObject ret = new JSONObject();
         if (this.uid != null) {
             ret.put(KEY_UID, this.uid);
@@ -84,7 +85,11 @@ public class FHSyncDataRecord {
     }
 
     public String toString() {
-        return this.getJSON().toString();
+        try {
+            return this.getJSON().toString();
+        } catch (JSONException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public boolean equals(Object pThat) {
@@ -100,20 +105,25 @@ public class FHSyncDataRecord {
     }
 
     public FHSyncDataRecord clone() {
-        JSONObject jsonObj = this.getJSON();
-        return FHSyncDataRecord.fromJSON(jsonObj);
+        JSONObject jsonObj;
+        try {
+            jsonObj = this.getJSON();
+            return FHSyncDataRecord.fromJSON(jsonObj);
+        } catch (JSONException e) {
+            throw new RuntimeException(e);
+        }
     }
 
-    public static FHSyncDataRecord fromJSON(JSONObject pObj) {
+    public static FHSyncDataRecord fromJSON(JSONObject obj) throws JSONException {
         FHSyncDataRecord record = new FHSyncDataRecord();
-        if (pObj.has(KEY_UID)) {
-            record.setUid(pObj.getString(KEY_UID));
+        if (obj.has(KEY_UID)) {
+            record.setUid(obj.getString(KEY_UID));
         }
-        if (pObj.has(KEY_DATA)) {
-            record.setData(pObj.getJSONObject(KEY_DATA));
+        if (obj.has(KEY_DATA)) {
+            record.setData(obj.getJSONObject(KEY_DATA));
         }
-        if (pObj.has(KEY_HASH)) {
-            record.setHashValue(pObj.getString(KEY_HASH));
+        if (obj.has(KEY_HASH)) {
+            record.setHashValue(obj.getString(KEY_HASH));
         }
         return record;
     }

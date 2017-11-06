@@ -1,12 +1,12 @@
 /**
  * Copyright Red Hat, Inc, and individual contributors.
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,8 +15,10 @@
  */
 package com.feedhenry.sdk.sync;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.util.Date;
-import org.json.fh.JSONObject;
 
 public class FHSyncPendingRecord {
 
@@ -27,7 +29,7 @@ public class FHSyncPendingRecord {
     private boolean crashed;
 
     private boolean delayed = false;
-    
+
     private String action;
 
     private long timestamp;
@@ -66,13 +68,12 @@ public class FHSyncPendingRecord {
 
     private static final String KEY_HASH = "hash";
     private String waitingFor;
-    
 
     public FHSyncPendingRecord() {
         this.timestamp = new Date().getTime();
     }
 
-    public JSONObject getJSON() {
+    public JSONObject getJSON() throws JSONException {
         JSONObject ret = new JSONObject();
         ret.put(KEY_INFLIGHT, this.inFight);
         ret.put(KEY_CRASHED, this.crashed);
@@ -95,73 +96,72 @@ public class FHSyncPendingRecord {
             ret.put(KEY_POST, this.postData.getData());
             ret.put(KEY_POST_HASH, this.postData.getHashValue());
         }
-        
+
         if (this.waitingFor != null) {
             ret.put(KEY_WAITING_FOR, waitingFor);
         }
-        
+
         return ret;
     }
 
-    public static FHSyncPendingRecord fromJSON(JSONObject pObj) {
+    public static FHSyncPendingRecord fromJSON(JSONObject obj) throws JSONException {
         FHSyncPendingRecord record = new FHSyncPendingRecord();
-        if (pObj.has(KEY_INFLIGHT)) {
-            record.setInFlight(pObj.getBoolean(KEY_INFLIGHT));
+        if (obj.has(KEY_INFLIGHT)) {
+            record.setInFlight(obj.getBoolean(KEY_INFLIGHT));
         }
-        if (pObj.has(KEY_INFLIGHT_DATE)) {
-            record.setInFlightDate(new Date(pObj.getLong(KEY_INFLIGHT_DATE)));
+        if (obj.has(KEY_INFLIGHT_DATE)) {
+            record.setInFlightDate(new Date(obj.getLong(KEY_INFLIGHT_DATE)));
         }
-        if (pObj.has(KEY_CRASHED)) {
-            record.setCrashed(pObj.getBoolean(KEY_CRASHED));
+        if (obj.has(KEY_CRASHED)) {
+            record.setCrashed(obj.getBoolean(KEY_CRASHED));
         }
-        if (pObj.has(KEY_TIMESTAMP)) {
-            record.setTimestamp(pObj.getLong(KEY_TIMESTAMP));
+        if (obj.has(KEY_TIMESTAMP)) {
+            record.setTimestamp(obj.getLong(KEY_TIMESTAMP));
         }
-        if (pObj.has(KEY_ACTION)) {
-            record.setAction(pObj.getString(KEY_ACTION));
+        if (obj.has(KEY_ACTION)) {
+            record.setAction(obj.getString(KEY_ACTION));
         }
-        if (pObj.has(KEY_UID)) {
-            record.setUid(pObj.getString(KEY_UID));
+        if (obj.has(KEY_UID)) {
+            record.setUid(obj.getString(KEY_UID));
         }
-        if (pObj.has(KEY_PRE)) {
+        if (obj.has(KEY_PRE)) {
             FHSyncDataRecord preData = new FHSyncDataRecord();
-            preData.setData(pObj.getJSONObject(KEY_PRE));
-            preData.setHashValue(pObj.getString(KEY_PRE_HASH));
+            preData.setData(obj.getJSONObject(KEY_PRE));
+            preData.setHashValue(obj.getString(KEY_PRE_HASH));
             record.setPreData(preData);
         }
-        if (pObj.has(KEY_POST)) {
+        if (obj.has(KEY_POST)) {
             FHSyncDataRecord postData = new FHSyncDataRecord();
-            postData.setData(pObj.getJSONObject(KEY_POST));
-            postData.setHashValue(pObj.getString(KEY_POST_HASH));
+            postData.setData(obj.getJSONObject(KEY_POST));
+            postData.setHashValue(obj.getString(KEY_POST_HASH));
             record.setPostData(postData);
         }
-        
-        if (pObj.has(KEY_DELAYED)) {
-          record.delayed = pObj.getBoolean(KEY_DELAYED);
+
+        if (obj.has(KEY_DELAYED)) {
+            record.delayed = obj.getBoolean(KEY_DELAYED);
         }
-        
-        if (pObj.has(KEY_WAITING_FOR)) {
-          record.waitingFor = pObj.getString(KEY_WAITING_FOR);
+
+        if (obj.has(KEY_WAITING_FOR)) {
+            record.waitingFor = obj.getString(KEY_WAITING_FOR);
         }
-        
+
         return record;
     }
 
-    public boolean equals(Object pThat) {
-        if (this == pThat) {
-            return true;
-        }
-
-        if (pThat instanceof FHSyncPendingRecord) {
-            FHSyncPendingRecord that = (FHSyncPendingRecord) pThat;
-            return this.getHashValue().equals(that.getHashValue());
-        } else {
+    public boolean equals(Object that) {
+        try {
+            return this == that || that instanceof FHSyncPendingRecord && this.getHashValue().equals(((FHSyncPendingRecord) that).getHashValue());
+        } catch (JSONException e) {
             return false;
         }
     }
 
     public String toString() {
-        return this.getJSON().toString();
+        try {
+            return this.getJSON().toString();
+        } catch (JSONException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public boolean isInFlight() {
@@ -228,7 +228,7 @@ public class FHSyncPendingRecord {
         this.postData = postData;
     }
 
-    public String getHashValue() {
+    public String getHashValue() throws JSONException {
         if (this.hashValue == null) {
             JSONObject jsonobj = this.getJSON();
             this.hashValue = FHSyncUtils.generateObjectHash(jsonobj);
@@ -255,7 +255,7 @@ public class FHSyncPendingRecord {
     public boolean isDelayed() {
         return this.delayed;
     }
-    
+
     public void setDelayed(boolean delayed) {
         this.delayed = delayed;
     }
@@ -267,5 +267,5 @@ public class FHSyncPendingRecord {
     public void setWaitingFor(String waitingFor) {
         this.waitingFor = waitingFor;
     }
-    
+
 }

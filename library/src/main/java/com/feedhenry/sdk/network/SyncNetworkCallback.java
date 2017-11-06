@@ -13,16 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.feedhenry.sdk.exceptions;
+package com.feedhenry.sdk.network;
 
-/**
- * This exception will be thrown if an Sync API method is called before Sync.init finishes.
- */
-public class FHNotReadyException extends Exception {
 
-    private static final String message = "Sync SDK is not ready. You need to ensure Sync.init is called.";
+public interface SyncNetworkCallback {
 
-    public FHNotReadyException() {
-        super(message);
-    }
+    /**
+     * Will be run if the action call is successful
+     *
+     * @param response the response data
+     */
+    void success(SyncNetworkResponse response);
+
+    /**
+     * Will be run if the action call is failed
+     *
+     * @param response the response data
+     */
+    void fail(SyncNetworkResponse response);
 }

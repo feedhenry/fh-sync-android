@@ -1,12 +1,12 @@
 /**
  * Copyright Red Hat, Inc, and individual contributors.
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,13 +16,13 @@
 package com.feedhenry.sdk.exceptions;
 
 /**
- * This exception will be thrown if an Sync API method is called before Sync.init finishes.
+ * Thrown if cloud url is not valid
  */
-public class FHNotReadyException extends Exception {
+public class InvalidUrlException extends Exception {
 
-    private static final String message = "Sync SDK is not ready. You need to ensure Sync.init is called.";
+    final private static String message = "Invalid url (%s) specified.";
 
-    public FHNotReadyException() {
-        super(message);
+    public InvalidUrlException(String url) {
+        super(String.format(message, url));
     }
 }
