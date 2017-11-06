@@ -38,8 +38,11 @@ public class ClientIdGeneratorImpl implements ClientIdGenerator {
     @Override
     public String getClientId() {
         SharedPreferences prefs = context.getSharedPreferences(FH_SYNC_PREFERENCES, Context.MODE_PRIVATE);
-        String clientId = prefs.getString(KEY_CLIENT_ID, generateNewId());
-        prefs.edit().putString(KEY_CLIENT_ID, clientId).apply();
+        String clientId = prefs.getString(KEY_CLIENT_ID, null);
+        if (clientId == null) {
+            clientId = generateNewId();
+            prefs.edit().putString(KEY_CLIENT_ID, clientId).apply();
+        }
         return clientId;
     }
 
