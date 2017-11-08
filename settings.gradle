@@ -1,1 +1,1 @@
-include ':library'
+include ':sync-android', ':sync-java'

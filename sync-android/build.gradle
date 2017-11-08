@@ -1,0 +1,71 @@
+plugins {
+    id "com.github.kt3k.coveralls" version "2.8.1"
+}
+
+apply plugin: 'com.android.library'
+
+android {
+    compileSdkVersion 26
+    buildToolsVersion '26.0.2'
+
+    defaultConfig {
+        minSdkVersion 16
+        targetSdkVersion 26
+        versionCode Integer.parseInt(project.property("VERSION_CODE"))
+        versionName project.property("VERSION_NAME")
+
+        testApplicationId "com.feedhenry.sdk.test"
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        testHandleProfiling true
+        testFunctionalTest true
+
+        multiDexEnabled true
+    }
+
+    lintOptions {
+        abortOnError false
+    }
+
+    buildTypes {
+        debug {
+            testCoverageEnabled true
+        }
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    packagingOptions {
+        exclude 'META-INF/NOTICE'
+        exclude 'META-INF/LICENSE'
+    }
+
+    compileOptions {
+        targetCompatibility 1.8
+        sourceCompatibility 1.8
+    }
+}
+
+dependencies {
+    testCompile 'junit:junit:4.12'
+    compile 'com.squareup.okhttp3:okhttp:3.9.0'
+    androidTestCompile 'com.android.support.test:runner:1.0.1'
+    androidTestCompile 'com.android.support.test:rules:1.0.1'
+    androidTestCompile 'com.linkedin.dexmaker:dexmaker-mockito:2.2.0'
+    androidTestCompile 'com.squareup.okhttp:mockwebserver:2.4.0'
+    compile 'org.jetbrains:annotations:15.0'
+    compile project(':sync-java')
+}
+
+coveralls {
+    sourceDirs = files('library/src/main/java').flatten()
+    jacocoReportPath = "${buildDir}/reports/coverage/debug/report.xml"
+}
+
+tasks.coveralls {
+    dependsOn 'connectedAndroidTest'
+    onlyIf { System.env.'CI' }
+}
+
+//apply from: '../gradle-mvn-push.gradle'
