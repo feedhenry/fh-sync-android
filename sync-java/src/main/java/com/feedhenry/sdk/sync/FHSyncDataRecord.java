@@ -15,6 +15,7 @@
  */
 package com.feedhenry.sdk.sync;
 
+import com.feedhenry.sdk.exceptions.HashException;
 import com.feedhenry.sdk.utils.UtilFactory;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -63,7 +64,11 @@ public class FHSyncDataRecord {
 
     public void setData(JSONObject data) throws JSONException {
         this.data = new JSONObject(data.toString());
-        hashValue = FHSyncUtils.generateObjectHash(utilFactory.getLogger(), this.data);
+        try {
+            hashValue = FHSyncUtils.generateObjectHash(this.data);
+        } catch (HashException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public void setUid(String uid) {
@@ -112,7 +117,7 @@ public class FHSyncDataRecord {
         JSONObject jsonObj;
         try {
             jsonObj = this.getJSON();
-            return FHSyncDataRecord.fromJSON(this.utilFactory,jsonObj);
+            return FHSyncDataRecord.fromJSON(this.utilFactory, jsonObj);
         } catch (JSONException e) {
             throw new RuntimeException(e);
         }

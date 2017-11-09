@@ -15,6 +15,7 @@
  */
 package com.feedhenry.sdk.sync;
 
+import com.feedhenry.sdk.exceptions.HashException;
 import com.feedhenry.sdk.utils.UtilFactory;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -73,7 +74,7 @@ public class FHSyncPendingRecord {
 
     public FHSyncPendingRecord(UtilFactory utilFactory) {
         this.timestamp = new Date().getTime();
-        this.utilFactory=utilFactory;
+        this.utilFactory = utilFactory;
     }
 
     public JSONObject getJSON() throws JSONException {
@@ -107,7 +108,7 @@ public class FHSyncPendingRecord {
         return ret;
     }
 
-    public static FHSyncPendingRecord fromJSON(UtilFactory utilFactory,JSONObject obj) throws JSONException {
+    public static FHSyncPendingRecord fromJSON(UtilFactory utilFactory, JSONObject obj) throws JSONException {
         FHSyncPendingRecord record = new FHSyncPendingRecord(utilFactory);
         if (obj.has(KEY_INFLIGHT)) {
             record.setInFlight(obj.getBoolean(KEY_INFLIGHT));
@@ -234,7 +235,11 @@ public class FHSyncPendingRecord {
     public String getHashValue() throws JSONException {
         if (this.hashValue == null) {
             JSONObject jsonobj = this.getJSON();
-            this.hashValue = FHSyncUtils.generateObjectHash(utilFactory.getLogger(),jsonobj);
+            try {
+                this.hashValue = FHSyncUtils.generateObjectHash(jsonobj);
+            } catch (HashException e) {
+                throw new RuntimeException(e);
+            }
         }
         return this.hashValue;
     }

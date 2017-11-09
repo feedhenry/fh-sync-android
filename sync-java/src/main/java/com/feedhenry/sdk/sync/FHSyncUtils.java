@@ -15,7 +15,7 @@
  */
 package com.feedhenry.sdk.sync;
 
-import com.feedhenry.sdk.utils.Logger;
+import com.feedhenry.sdk.exceptions.HashException;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -23,9 +23,7 @@ import org.json.JSONObject;
 import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 public class FHSyncUtils {
 
@@ -37,7 +35,13 @@ public class FHSyncUtils {
     private static final char[] DIGITS = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
     private static final String TAG = "FHSyncUtils";
 
-    public static JSONArray sortObj(JSONArray object) throws JSONException {
+    /**
+     * Creates special representation used to calculate hash of supplied {@link JSONArray}
+     * @param object
+     * @return JSON array representation used to calculate hash
+     * @throws JSONException something went wrong when creating the object
+     */
+    private static JSONArray sortObj(JSONArray object) throws JSONException {
         JSONArray results = new JSONArray();
         for (int i = 0, length = object.length(); i < length; i++) {
             JSONObject obj = new JSONObject();
@@ -54,7 +58,13 @@ public class FHSyncUtils {
         return results;
     }
 
-    public static JSONArray sortObj(JSONObject object) throws JSONException {
+    /**
+     * Creates special representation used to calculate hash of supplied {@link JSONObject}
+     * @param object
+     * @return JSON array representation used to calculate hash
+     * @throws JSONException something went wrong when creating the object
+     */
+    static JSONArray sortObj(JSONObject object) throws JSONException {
         JSONArray results = new JSONArray();
         JSONArray keys = object.names();
         List<String> sortedKeys = sortNames(keys);
@@ -73,22 +83,93 @@ public class FHSyncUtils {
         return results;
     }
 
-    public static String generateObjectHash(Logger log,JSONArray object) throws JSONException {
-        JSONArray sorted = sortObj(object);
-        String hashValue = generateHash(log,sorted.toString());
+    /**
+     * Converts {@link JSONArray} to it's text representation. All keys in {@link JSONObject}s are naturally ordered.
+     * @param array JSON array
+     * @return JSON text representation
+     */
+    public static String orderedJSONArrayToString(JSONArray array) {
+        StringBuilder sb = new StringBuilder("[");
+        int len = array.length();
 
-        return hashValue;
+        for (int i = 0; i < len; i += 1) {
+            if (i > 0) {
+                sb.append(",");
+            }
+            Object objAtPos = array.get(i);
+            if (objAtPos instanceof JSONObject) {
+                sb.append(orderedJSONObjectToString((JSONObject) objAtPos));
+            } else if (objAtPos instanceof JSONArray) {
+                sb.append(orderedJSONArrayToString((JSONArray) objAtPos));
+            } else {
+                sb.append(JSONObject.valueToString(objAtPos));
+            }
+        }
+        sb.append("]");
+        return sb.toString();
     }
 
-    public static String generateObjectHash(Logger log,JSONObject object) throws JSONException {
-        String hashValue = "";
-        JSONArray sorted = sortObj(object);
-        hashValue = generateHash(log,sorted.toString());
+    /**
+     * Converts {@link JSONObject} to it's text representation. All keys in {@link JSONObject}s are naturally ordered.
+     * @param jsonAtPos JSON object
+     * @return JSON text representation
+     */
+    public static StringBuilder orderedJSONObjectToString(JSONObject jsonAtPos) {
+        Iterator keys = new TreeSet<>(jsonAtPos.keySet()).iterator();
+        StringBuilder sb = new StringBuilder("{");
 
-        return hashValue;
+        while (keys.hasNext()) {
+            if (sb.length() > 1) {
+                sb.append(',');
+            }
+            Object o = keys.next();
+            sb.append(JSONObject.quote(o.toString()));
+            sb.append(':');
+            Object objAtKey = jsonAtPos.get(o.toString());
+            if (objAtKey instanceof JSONObject) {
+                sb.append(orderedJSONObjectToString((JSONObject) objAtKey));
+            } else if (objAtKey instanceof JSONArray) {
+                sb.append(orderedJSONArrayToString((JSONArray) objAtKey));
+            } else {
+                sb.append(JSONObject.valueToString(objAtKey));
+            }
+        }
+        sb.append('}');
+        return sb;
     }
 
-    public static String generateHash(Logger log,String text) {
+    /**
+     * Calculates SHA-1 hash used for Sync from the supplied {@link JSONArray}
+     * @param object object to calculate hash from
+     * @return hash in form of hexadecimal number
+     * @throws JSONException problem when parsing JSON or creating JSON
+     * @throws HashException unable to calculate hash
+     */
+    public static String generateObjectHash(JSONArray object) throws JSONException, HashException {
+        JSONArray sorted = sortObj(object);
+        return generateHash(orderedJSONArrayToString(sorted));
+    }
+
+    /**
+     * Calculates SHA-1 hash used for Sync from the supplied {@link JSONObject}
+     * @param object object to calculate hash from
+     * @return hash in form of hexadecimal number
+     * @throws JSONException problem when parsing JSON or creating JSON
+     * @throws HashException unable to calculate hash
+     */
+    public static String generateObjectHash(JSONObject object) throws JSONException, HashException {
+        JSONArray sorted = sortObj(object);
+        return generateHash(orderedJSONArrayToString(sorted));
+    }
+
+    /**
+     * Calculates SHA-1 of the supplied text.
+     *
+     * @param text text
+     *
+     * @return SHA-1 of the text
+     */
+    public static String generateHash(String text) throws HashException {
         try {
             String hashValue;
             MessageDigest md = MessageDigest.getInstance("SHA-1");
@@ -96,12 +177,18 @@ public class FHSyncUtils {
             md.update(text.getBytes("ASCII"));
             hashValue = encodeHex(md.digest());
             return hashValue;
-        } catch (NoSuchAlgorithmException | UnsupportedEncodingException ex) {
-            log.e(TAG, ex.getMessage(), ex);
-            throw new RuntimeException(ex);
+        } catch (NoSuchAlgorithmException | UnsupportedEncodingException e) {
+            throw new HashException(e);
         }
     }
 
+    /**
+     * Converts data to hexadecimal number.
+     *
+     * @param data data in array
+     *
+     * @return hexadecimal number as {@link String} value, e.g. "5f4675723d658919ede35fac62fade8c6397df1d"
+     */
     private static String encodeHex(byte[] data) {
         int l = data.length;
 

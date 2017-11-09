@@ -16,6 +16,7 @@
 package com.feedhenry.sdk.sync;
 
 import android.util.Log;
+import com.feedhenry.sdk.utils.UtilFactory;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -55,21 +56,21 @@ public class FHTestUtils {
         return sb.toString();
     }
 
-    public static FHSyncDataRecord generateRadomDataRecord() throws Exception {
+    public static FHSyncDataRecord generateRadomDataRecord(UtilFactory utilFactory) throws Exception {
         JSONObject json = generateJSON();
-        return new FHSyncDataRecord(json);
+        return new FHSyncDataRecord(utilFactory,json);
     }
 
-    public static FHSyncPendingRecord generateRandomPendingRecord() throws Exception {
-        FHSyncPendingRecord pending = new FHSyncPendingRecord();
+    public static FHSyncPendingRecord generateRandomPendingRecord(UtilFactory utilFactory) throws Exception {
+        FHSyncPendingRecord pending = new FHSyncPendingRecord(utilFactory);
         pending.setInFlightDate(new Date());
         pending.setInFlight(true);
         pending.setCrashed(false);
         pending.setAction("create");
         pending.setTimestamp(new Date().getTime());
         pending.setUid(genRandomString(10));
-        pending.setPreData(generateRadomDataRecord());
-        pending.setPostData(generateRadomDataRecord());
+        pending.setPreData(generateRadomDataRecord(utilFactory));
+        pending.setPostData(generateRadomDataRecord(utilFactory));
         return pending;
     }
     

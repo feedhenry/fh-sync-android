@@ -16,26 +16,38 @@
 package com.feedhenry.sdk.sync;
 
 import android.support.test.runner.AndroidJUnit4;
+import com.feedhenry.sdk.android.AndroidUtilFactory;
 import org.json.JSONObject;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import static android.support.test.InstrumentationRegistry.getContext;
+import static com.feedhenry.sdk.utils.Logger.LOG_LEVEL_VERBOSE;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNotNull;
 
 @RunWith(AndroidJUnit4.class)
 public class FHSyncDataRecordTest {
 
+    private AndroidUtilFactory utilFactory;
+
+    @Before
+    public void setUp() throws Exception {
+        utilFactory = new AndroidUtilFactory(getContext());
+        utilFactory.getLogger().setLogLevel(LOG_LEVEL_VERBOSE);
+    }
+
     @Test
     public void testDataHappy() throws Exception {
         JSONObject obj = FHTestUtils.generateJSON();
 
-        FHSyncDataRecord record = new FHSyncDataRecord(obj);
+        FHSyncDataRecord record = new FHSyncDataRecord(utilFactory,obj);
         assertNotNull(record.getData());
         assertNotNull(record.getHashValue());
 
         JSONObject json = record.getJSON();
-        FHSyncDataRecord another = FHSyncDataRecord.fromJSON(json);
+        FHSyncDataRecord another = FHSyncDataRecord.fromJSON(utilFactory,json);
         assertEquals(record, another);
     }
 
