@@ -21,6 +21,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.BlockJUnit4ClassRunner;
 
+import static com.feedhenry.sdk.test.TestUtilFactory.UTIL_FACTORY;
 import static junit.framework.Assert.assertEquals;
 
 @RunWith(BlockJUnit4ClassRunner.class)
@@ -49,7 +50,7 @@ public class FHSyncUtilsTest {
         jsobj.put("obj3key", "obj3");
         jsobj.put("obj4key", "obj4");
         obj.put("testDictKey", jsobj);
-        String hash = FHSyncUtils.generateObjectHash(obj);
+        String hash = FHSyncUtils.generateObjectHash(UTIL_FACTORY, obj);
         System.out.println("Generated hash = " + hash);
         String expected = "5f4675723d658919ede35fac62fade8c6397df1d";
         assertEquals(expected, hash);
@@ -69,13 +70,14 @@ public class FHSyncUtilsTest {
         obj.put("testDictKey", jsobj);
         jsobj.put("obj4key", "obj4");
         jsobj.put("obj3key", "obj3");
-        String hash = FHSyncUtils.generateObjectHash(obj);
+        String hash = FHSyncUtils.generateObjectHash(UTIL_FACTORY, obj);
         System.out.println("Generated hash = " + hash);
         String expected = "5f4675723d658919ede35fac62fade8c6397df1d";
         assertEquals(expected, hash);
     }
 
     private class SomethingToBeTested {
+
         public int a;
     }
 

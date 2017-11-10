@@ -25,32 +25,48 @@ public interface UtilFactory {
 
     /**
      * Provides logging functionality.
+     * Single instance.
+     *
      * @return logger
      */
     Logger getLogger();
 
     /**
      * Provides client id generation functionality.
+     * Single instance.
+     *
      * @return client id generator
      */
     ClientIdGenerator getClientIdGenerator();
 
     /**
      * Provides network client to execute network requests
+     * Single instance.
+     *
      * @return network client
      */
     NetworkClient getNetworkClient();
 
     /**
      * Provides persistent storage of data.
+     * Single instance.
+     *
      * @return storage object
      */
     Storage getStorage();
 
     /**
      * Provides capability of scheduling asynchronous task.
+     * Single instance.
+     *
      * @return scheuler
      */
     Scheduler getScheduler();
+
+    /**
+     * Creates new instance of JsonWriter, you can stringify your JSON objects with it.
+     * @return new instance of JsonWriter
+     */
+    JsonWriter createJsonWriter();
 
 }

@@ -19,10 +19,7 @@ import android.content.Context;
 import com.feedhenry.sdk.android.utils.FHLog;
 import com.feedhenry.sdk.network.NetworkClient;
 import com.feedhenry.sdk.storage.Storage;
-import com.feedhenry.sdk.utils.ClientIdGenerator;
-import com.feedhenry.sdk.utils.Logger;
-import com.feedhenry.sdk.utils.Scheduler;
-import com.feedhenry.sdk.utils.UtilFactory;
+import com.feedhenry.sdk.utils.*;
 
 /**
  * Factory provides Android specific implementations.
@@ -75,6 +72,11 @@ public class AndroidUtilFactory implements UtilFactory {
             scheduler = new AndroidScheduler(context);
         }
         return scheduler;
+    }
+
+    @Override
+    public JsonWriter createJsonWriter() {
+        return new AndroidJsonWriter();
     }
 
 }

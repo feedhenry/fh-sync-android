@@ -3,15 +3,11 @@ package com.feedhenry.sdk.test;
 import com.feedhenry.sdk.network.NetworkClient;
 import com.feedhenry.sdk.storage.FileStorage;
 import com.feedhenry.sdk.storage.Storage;
-import com.feedhenry.sdk.utils.ClientIdGenerator;
-import com.feedhenry.sdk.utils.Logger;
-import com.feedhenry.sdk.utils.Scheduler;
-import com.feedhenry.sdk.utils.UtilFactory;
+import com.feedhenry.sdk.utils.*;
 
 /**
  * Created on 10/29/17.
  */
-
 public class TestUtilFactory implements UtilFactory {
 
     public final static UtilFactory UTIL_FACTORY = new TestUtilFactory();
@@ -19,8 +15,8 @@ public class TestUtilFactory implements UtilFactory {
     private final FileStorage storage;
 
     private TestUtilFactory() {
-        logger =new TestLogger();
-        storage= new FileStorage();
+        logger = new TestLogger();
+        storage = new FileStorage();
     }
 
     @Override
@@ -46,5 +42,10 @@ public class TestUtilFactory implements UtilFactory {
     @Override
     public Scheduler getScheduler() {
         return null;
+    }
+
+    @Override
+    public JsonWriter createJsonWriter() {
+        return new JavaJsonWriter();
     }
 }

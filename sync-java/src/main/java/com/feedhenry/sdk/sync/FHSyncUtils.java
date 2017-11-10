@@ -16,6 +16,10 @@
 package com.feedhenry.sdk.sync;
 
 import com.feedhenry.sdk.exceptions.HashException;
+import com.feedhenry.sdk.utils.JsonWriter;
+import com.feedhenry.sdk.utils.UtilFactory;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -37,8 +41,11 @@ public class FHSyncUtils {
 
     /**
      * Creates special representation used to calculate hash of supplied {@link JSONArray}
+     *
      * @param object
+     *
      * @return JSON array representation used to calculate hash
+     *
      * @throws JSONException something went wrong when creating the object
      */
     private static JSONArray sortObj(JSONArray object) throws JSONException {
@@ -60,8 +67,11 @@ public class FHSyncUtils {
 
     /**
      * Creates special representation used to calculate hash of supplied {@link JSONObject}
+     *
      * @param object
+     *
      * @return JSON array representation used to calculate hash
+     *
      * @throws JSONException something went wrong when creating the object
      */
     static JSONArray sortObj(JSONObject object) throws JSONException {
@@ -85,81 +95,92 @@ public class FHSyncUtils {
 
     /**
      * Converts {@link JSONArray} to it's text representation. All keys in {@link JSONObject}s are naturally ordered.
-     * @param array JSON array
+     *
+     * @param utilFactory provider of platform-dependent utility functionality
+     * @param jsonWriter  converts JSONs to String
+     * @param array       JSON array
+     *
      * @return JSON text representation
      */
-    public static String orderedJSONArrayToString(JSONArray array) {
-        StringBuilder sb = new StringBuilder("[");
-        int len = array.length();
+    public static String orderedJSONArrayToString(@NotNull UtilFactory utilFactory, @Nullable JsonWriter jsonWriter, JSONArray array) {
+        JsonWriter js = jsonWriter != null ? jsonWriter : utilFactory.createJsonWriter();
 
+        int len = array.length();
+        js.beginArray();
         for (int i = 0; i < len; i += 1) {
-            if (i > 0) {
-                sb.append(",");
-            }
             Object objAtPos = array.get(i);
             if (objAtPos instanceof JSONObject) {
-                sb.append(orderedJSONObjectToString((JSONObject) objAtPos));
+                orderedJSONObjectToString(utilFactory, js, (JSONObject) objAtPos);
             } else if (objAtPos instanceof JSONArray) {
-                sb.append(orderedJSONArrayToString((JSONArray) objAtPos));
+                orderedJSONArrayToString(utilFactory, js, (JSONArray) objAtPos);
             } else {
-                sb.append(JSONObject.valueToString(objAtPos));
+                js.value(objAtPos);
             }
         }
-        sb.append("]");
-        return sb.toString();
+        js.endArray();
+        return js.toString();
     }
 
     /**
      * Converts {@link JSONObject} to it's text representation. All keys in {@link JSONObject}s are naturally ordered.
-     * @param jsonAtPos JSON object
+     *
+     * @param utilFactory provider of platform-dependent utility functionality
+     * @param jsonWriter  converts JSONs to String
+     * @param jsonObject   JSON object
+     *
      * @return JSON text representation
      */
-    public static StringBuilder orderedJSONObjectToString(JSONObject jsonAtPos) {
-        Iterator keys = new TreeSet<>(jsonAtPos.keySet()).iterator();
-        StringBuilder sb = new StringBuilder("{");
+    public static String orderedJSONObjectToString(@NotNull UtilFactory utilFactory, @Nullable JsonWriter jsonWriter, JSONObject jsonObject) {
+        JsonWriter js = jsonWriter != null ? jsonWriter : utilFactory.createJsonWriter();
+
+        Iterator keys = new TreeSet<>(jsonObject.keySet()).iterator();
+        js.beginObject();
 
         while (keys.hasNext()) {
-            if (sb.length() > 1) {
-                sb.append(',');
-            }
             Object o = keys.next();
-            sb.append(JSONObject.quote(o.toString()));
-            sb.append(':');
-            Object objAtKey = jsonAtPos.get(o.toString());
+            String key = o.toString();
+            Object objAtKey = jsonObject.get(key);
+            js.key(key);
             if (objAtKey instanceof JSONObject) {
-                sb.append(orderedJSONObjectToString((JSONObject) objAtKey));
+                orderedJSONObjectToString(utilFactory, js, (JSONObject) objAtKey);
             } else if (objAtKey instanceof JSONArray) {
-                sb.append(orderedJSONArrayToString((JSONArray) objAtKey));
+                orderedJSONArrayToString(utilFactory, js, (JSONArray) objAtKey);
             } else {
-                sb.append(JSONObject.valueToString(objAtKey));
+                js.value(objAtKey);
             }
         }
-        sb.append('}');
-        return sb;
+        js.endObject();
+        return js.toString();
     }
 
     /**
      * Calculates SHA-1 hash used for Sync from the supplied {@link JSONArray}
+     *
      * @param object object to calculate hash from
+     *
      * @return hash in form of hexadecimal number
+     *
      * @throws JSONException problem when parsing JSON or creating JSON
      * @throws HashException unable to calculate hash
      */
-    public static String generateObjectHash(JSONArray object) throws JSONException, HashException {
+    public static String generateObjectHash(@NotNull UtilFactory utilFactory, @NotNull JSONArray object) throws JSONException, HashException {
         JSONArray sorted = sortObj(object);
-        return generateHash(orderedJSONArrayToString(sorted));
+        return generateHash(orderedJSONArrayToString(utilFactory, null, sorted));
     }
 
     /**
      * Calculates SHA-1 hash used for Sync from the supplied {@link JSONObject}
+     *
      * @param object object to calculate hash from
+     *
      * @return hash in form of hexadecimal number
+     *
      * @throws JSONException problem when parsing JSON or creating JSON
      * @throws HashException unable to calculate hash
      */
-    public static String generateObjectHash(JSONObject object) throws JSONException, HashException {
+    public static String generateObjectHash(@NotNull UtilFactory utilFactory, @NotNull JSONObject object) throws JSONException, HashException {
         JSONArray sorted = sortObj(object);
-        return generateHash(orderedJSONArrayToString(sorted));
+        return generateHash(orderedJSONArrayToString(utilFactory, null, sorted));
     }
 
     /**

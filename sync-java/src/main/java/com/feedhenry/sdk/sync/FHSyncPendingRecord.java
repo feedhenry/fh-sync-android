@@ -236,7 +236,7 @@ public class FHSyncPendingRecord {
         if (this.hashValue == null) {
             JSONObject jsonobj = this.getJSON();
             try {
-                this.hashValue = FHSyncUtils.generateObjectHash(jsonobj);
+                this.hashValue = FHSyncUtils.generateObjectHash(utilFactory,jsonobj);
             } catch (HashException e) {
                 throw new RuntimeException(e);
             }

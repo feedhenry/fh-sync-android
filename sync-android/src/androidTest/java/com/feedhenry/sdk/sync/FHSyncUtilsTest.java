@@ -62,7 +62,7 @@ public class FHSyncUtilsTest {
         jsobj.put("obj3key", "obj3");
         jsobj.put("obj4key", "obj4");
         obj.put("testDictKey", jsobj);
-        String hash = FHSyncUtils.generateObjectHash(obj);
+        String hash = FHSyncUtils.generateObjectHash(utilFactory, obj);
         System.out.println("Generated hash = " + hash);
         String expected = "5f4675723d658919ede35fac62fade8c6397df1d";
         assertEquals(expected, hash);
@@ -71,18 +71,21 @@ public class FHSyncUtilsTest {
     @Test
     public void testHashConsistence() throws Exception {
         JSONObject obj = new JSONObject();
-        obj.put("testKey", "Test Data");
-        obj.put("testBoolKey", true);
         obj.put("testNumKey", 10);
+        obj.put("testBoolKey", true);
+        obj.put("testKey", "Test Data");
         JSONArray arr = new JSONArray();
         arr.put("obj1");
-        arr.put("obj2");
         obj.put("testArrayKey", arr);
+        arr.put("obj2");
         JSONObject jsobj = new JSONObject();
-        jsobj.put("obj3key", "obj3");
-        jsobj.put("obj4key", "obj4");
         obj.put("testDictKey", jsobj);
-        System.out.println("/"+FHSyncUtils.orderedJSONArrayToString(FHSyncUtils.sortObj(obj))+"/");
+        jsobj.put("obj4key", "obj4");
+        jsobj.put("obj3key", "obj3");
+        String hash = FHSyncUtils.generateObjectHash(utilFactory, obj);
+        System.out.println("Generated hash = " + hash);
+        String expected = "5f4675723d658919ede35fac62fade8c6397df1d";
+        assertEquals(expected, hash);
     }
 
 }

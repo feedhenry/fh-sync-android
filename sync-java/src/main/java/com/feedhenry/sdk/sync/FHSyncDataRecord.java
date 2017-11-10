@@ -65,7 +65,7 @@ public class FHSyncDataRecord {
     public void setData(JSONObject data) throws JSONException {
         this.data = new JSONObject(data.toString());
         try {
-            hashValue = FHSyncUtils.generateObjectHash(this.data);
+            hashValue = FHSyncUtils.generateObjectHash(utilFactory,this.data);
         } catch (HashException e) {
             throw new RuntimeException(e);
         }
