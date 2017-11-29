@@ -1,6 +1,13 @@
 coverage:
   status:
     project: 
-      default:
+      sync_java:
+        paths:
+          - "sync-java"
+        target: auto  # this is default
+        if_not_found: success  # no commit found? still set a success
+      sync_android:
+        paths:
+          - "sync-android"
         target: auto  # this is default
         if_not_found: success  # no commit found? still set a success
