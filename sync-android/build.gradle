@@ -48,14 +48,14 @@ android {
 }
 
 dependencies {
-    testCompile 'junit:junit:4.12'
-    compile 'com.squareup.okhttp3:okhttp:3.9.0'
-    androidTestCompile 'com.android.support.test:runner:1.0.1'
-    androidTestCompile 'com.android.support.test:rules:1.0.1'
-    androidTestCompile 'com.linkedin.dexmaker:dexmaker-mockito:2.2.0'
-    androidTestCompile 'com.squareup.okhttp:mockwebserver:2.4.0'
-    compile 'org.jetbrains:annotations:15.0'
-    compile project(':sync-java')
+    testImplementation 'junit:junit:4.12'
+    implementation 'com.squareup.okhttp3:okhttp:3.9.0'
+    androidTestImplementation 'com.android.support.test:runner:1.0.1'
+    androidTestImplementation 'com.android.support.test:rules:1.0.1'
+    androidTestImplementation 'com.linkedin.dexmaker:dexmaker-mockito:2.2.0'
+    androidTestImplementation 'com.squareup.okhttp:mockwebserver:2.4.0'
+    implementation 'org.jetbrains:annotations:15.0'
+    implementation project(':sync-java')
 }
 
 coveralls {
